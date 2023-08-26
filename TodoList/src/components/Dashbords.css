@@ -1,0 +1,44 @@
+table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 600px;
+    margin: auto;
+    text-align: center;
+  }
+
+  th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+
+  th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+
+  /* Style alternating rows for better readability */
+  tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+
+  /* Style the table header */
+ /* Style the title */
+ h1 {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 50px;
+    border: solid 2px black;
+    max-width: 100%;
+    padding: 10px;
+    font-size: 24px;
+    background-color: #f2f2f2;
+    font-weight: bold;
+    /* display: inline-block; Add this line */
+
+  }
+
+  /* Center the table on the page */
+  div {
+    text-align: center;
+    margin-top: 20px;
+  }

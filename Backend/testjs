@@ -1,0 +1,179 @@
+// server.js (backend)
+
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const app = express();
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/myapp', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Define the user schema
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+});
+
+const User = mongoose.model('User', userSchema);
+
+// User registration route
+app.post('/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ username, password: hashedPassword });
+    await user.save();
+    res.status(201).json({ message: 'User registered successfully.' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error registering user.' });
+  }
+});
+
+// User login route
+app.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user) {
+      res.status(401).json({ message: 'Invalid username or password.' });
+      return;
+    }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      res.status(401).json({ message: 'Invalid username or password.' });
+      return;
+    }
+    const token = jwt.sign({ username: user.username }, 'secretKey');
+    res.json({ token });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error logging in.' });
+  }
+});
+
+// Score submission route (protected)
+app.post('/score', authenticateToken, (req, res) => {
+  // Get the username from the JWT payload
+  const { username } = req.user;
+  // Process the submitted score here
+  // ...
+  res.json({ message: 'Score registered successfully.' });
+});
+
+// Middleware to authenticate JWT
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, 'secretKey', (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server listening on port 3000');
+});
+
+
+// ****************Front End***********************
+// App.js (frontend)
+
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Switch, Route, Link, Redirect } from 'react-router-dom';
+import axios from 'axios';
+
+function App() {
+  const [loggedIn, setLoggedIn] = useState(localStorage.getItem('token') !== null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('/login', { username, password });
+      const token = response.data.token;
+      localStorage.setItem('token', token);
+      setLoggedIn(true);
+    } catch (error) {
+      console.log(error);
+      // Handle login error
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setLoggedIn(false);
+  };
+
+  const handleScoreSubmission = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('/score', { score }, { headers: { Authorization: `Bearer ${token}` } });
+      // Handle successful score submission
+    } catch (error) {
+      console.log(error);
+      // Handle score submission error
+    }
+  };
+
+  return (
+    <Router>
+      <div>
+        <nav>
+          <ul>
+            {loggedIn ? (
+              <li>
+                <Link to="/scores">Scores</Link>
+              </li>
+            ) : null}
+            <li>
+              {loggedIn ? (
+                <button onClick={handleLogout}>Logout</button>
+              ) : (
+                <Link to="/login">Login</Link>
+              )}
+            </li>
+          </ul>
+        </nav>
+
+        <Switch>
+          <Route path="/login">
+            {loggedIn ? (
+              <Redirect to="/scores" />
+            ) : (
+              <form onSubmit={handleLogin}>
+                <input type="text" placeholder="Username" onChange={(e) => setUsername(e.target.value)} />
+                <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+                <button type="submit">Login</button>
+              </form>
+            )}
+          </Route>
+          <Route path="/scores">
+            {!loggedIn ? (
+              <Redirect to="/login" />
+            ) : (
+              <form onSubmit={handleScoreSubmission}>
+                <input type="number" placeholder="Score" onChange={(e) => setScore(e.target.value)} />
+                <button type="submit">Submit Score</button>
+              </form>
+            )}
+          </Route>
+        </Switch>
+      </div>
+    </Router>
+  );
+}
+
+export default App;

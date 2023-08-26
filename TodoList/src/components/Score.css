@@ -1,0 +1,28 @@
+body{
+  background-color: blueviolet;
+}
+.container{
+  display: flex;
+  flex-direction: column;
+}
+.title{
+  font-size: 70px;
+}
+.userinfo{
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 40px;
+  border: 2px black solid;
+  width: 400px;
+  margin-bottom: 50px;
+}
+.updateScore{
+  display: flex;
+  gap: 20px
+}
+
+.log_out{
+  background-color: blue;
+  margin-top: 50px;
+}
